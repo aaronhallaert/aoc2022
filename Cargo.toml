@@ -21,6 +21,10 @@ path = "src/day2.rs"
 name = "day3"
 path = "src/day3.rs"
 
+[[bin]]
+name = "day4"
+path = "src/day4.rs"
+
 [dependencies]
 strum = "0.24.1"
 strum_macros = "0.24.3"
