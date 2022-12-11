@@ -45,7 +45,10 @@ path = "src/day8.rs"
 name = "day9"
 path = "src/day9.rs"
 
+[[bin]]
+name = "day10"
+path = "src/day10.rs"
+
 [dependencies]
 regex = "1.7.0"
-strum = "0.24.1"
-strum_macros = "0.24.3"
+anyhow = "1.0"
