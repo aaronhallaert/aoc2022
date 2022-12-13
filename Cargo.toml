@@ -53,6 +53,10 @@ path = "src/day10.rs"
 name = "day11"
 path = "src/day11.rs"
 
+[[bin]]
+name = "day12"
+path = "src/day12.rs"
+
 
 [dependencies]
 regex = "1.7.0"
