@@ -57,7 +57,13 @@ path = "src/day11.rs"
 name = "day12"
 path = "src/day12.rs"
 
+[[bin]]
+name = "day13"
+path = "src/day13.rs"
+
 
 [dependencies]
 regex = "1.7.0"
 anyhow = "1.0"
+serde = {version= "1.0.150", features=["derive"]}
+serde_json = "1.0.89"
