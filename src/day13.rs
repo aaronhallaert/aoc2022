@@ -7,12 +7,12 @@ use std::{
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 struct Group {
     data: Vec<Unit>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 enum Unit {
     IntUnit(usize),
     ArrayUnit(Vec<Unit>),
@@ -77,7 +77,7 @@ fn main() {
 
             (group_index, ordered)
         })
-        .filter(|(index, ordered)| {
+        .filter(|(_index, ordered)| {
             // println!("Index {} - Ordered {:?}", index + 1, ordered);
             *ordered
         })
@@ -85,23 +85,62 @@ fn main() {
         .sum::<usize>();
 
     println!("Result: {}", result);
+
+    let mut group_vector = groups
+        .iter()
+        .flatten()
+        .map(|a| Group::from_str(a).unwrap())
+        .collect::<Vec<Group>>();
+
+    group_vector.push(Group {
+        data: vec![Unit::ArrayUnit(vec![Unit::IntUnit(2)])],
+    });
+
+    group_vector.push(Group {
+        data: vec![Unit::ArrayUnit(vec![Unit::IntUnit(6)])],
+    });
+
+    group_vector.sort_by(|a, b| match are_groups_ordered(a, b) {
+        Some(true) => std::cmp::Ordering::Less,
+        Some(false) => std::cmp::Ordering::Greater,
+        None => std::cmp::Ordering::Equal,
+    });
+
+    let part2 = group_vector
+        .iter()
+        .enumerate()
+        .filter(|(_, g)| {
+            *g == &Group {
+                data: vec![Unit::ArrayUnit(vec![Unit::IntUnit(2)])],
+            } || *g
+                == &Group {
+                    data: vec![Unit::ArrayUnit(vec![Unit::IntUnit(6)])],
+                }
+        })
+        .map(|(index, a)| {
+            println!("{:?}", a);
+            index + 1
+        })
+        .product::<usize>();
+
+    println!("Part 2: {}", part2);
 }
 
 fn check_array_unit_ordered(part_1: &[Unit], part_2: &[Unit]) -> Option<bool> {
-    let result = part_1.iter().zip(part_2.iter()).map(|(a, b)| {
-        is_ordered(a, b)
-    }).find(|x| x.is_some());
+    let result = part_1
+        .iter()
+        .zip(part_2.iter())
+        .map(|(a, b)| is_ordered(a, b))
+        .find(|x| x.is_some());
 
     match result {
         Some(res) => res,
         None => {
             if part_1.len() == part_2.len() {
                 None
-            }
-            else {
+            } else {
                 Some(part_1.len() < part_2.len())
             }
-            
         }
     }
 }
