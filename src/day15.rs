@@ -1,6 +1,5 @@
-use itertools::Itertools;
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     fs::File,
     io::{self, BufRead},
     str::FromStr,
@@ -9,7 +8,7 @@ use std::{
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct Position(isize, isize);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct RowCoverage(isize, isize);
 
 #[derive(Debug)]
@@ -87,34 +86,108 @@ fn main() {
         .flatten()
         .collect::<Vec<String>>();
 
+    // TEST
     // let interested_row = 10;
-    let interested_row = 2000000;
+    // let max_range = 20;
 
+    // INPUT
+    // let interested_row = 2000000;
+    let max_range = 4_000_000;
+
+    println!("Creating sensors...");
     let sensors = input
         .iter()
-        .map(|i| Sensor::from_str(i).unwrap()).collect::<Vec<Sensor>>();
+        .map(|i| Sensor::from_str(i).unwrap())
+        .collect::<Vec<Sensor>>();
 
-    let range = sensors
+    // PART 2
+    println!("Folding coverage...");
+    let coverage = sensors
         .iter()
-        .fold(HashSet::new(), |mut final_range, sensor| {
-            if let Some(coverage_at_row) = sensor.coverage.get(&interested_row) {
-                let range = coverage_at_row.0..coverage_at_row.1 + 1;
-                final_range.extend(range);
+        .fold(HashMap::new(), |mut final_map, sensor| {
+            sensor
+                .coverage
+                .iter()
+                .filter(|(row_index, _row_coverage)| *row_index <= &max_range && *row_index >= &0)
+                .for_each(|(row_index, row_coverage)| {
+                    let new_row_coverage = match row_coverage {
+                        RowCoverage(a, b) if *a < 0 && *b > max_range => RowCoverage(0, max_range),
+                        RowCoverage(a, b) if *a < 0 => RowCoverage(0, *b),
+                        RowCoverage(a, b) if *b > max_range => RowCoverage(*a, max_range),
+                        _ => row_coverage.clone(),
+                    };
+
+                    if final_map.get(row_index).is_none() {
+                        // initialize the range
+                        final_map.insert(row_index, vec![new_row_coverage]);
+                    } else {
+                        // extend the range
+                        let vec = final_map.get_mut(row_index).unwrap();
+
+                        vec.push(new_row_coverage);
+                    }
+                });
+
+            final_map
+        });
+
+    // Beacon can only be at edge of coverage
+    println!("Searching single space...");
+    for (row_index, row_coverage_vec) in coverage {
+        let test = row_coverage_vec.iter().find_map(|row_cov| {
+            let min = match row_cov.0 {
+                0 => 0,
+                _ => row_cov.0 - 1,
+            };
+            let max = match row_cov.1 {
+                a if row_cov.1 == max_range => a,
+                _ => row_cov.1 + 1,
+            };
+
+            if !row_coverage_vec
+                .iter()
+                .any(|r| (r.0..r.1 + 1).contains(&min))
+            {
+                Some(min)
+            } else if !row_coverage_vec
+                .iter()
+                .any(|r| (r.0..r.1 + 1).contains(&max))
+            {
+                Some(max)
+            } else {
+                None
             }
-            final_range
-        })
-        .len();
+        });
 
-    let beacons_on_row = sensors.iter().filter_map(|s| {
-        if s.closest_beacon.1 == interested_row {
-            Some(&s.closest_beacon)
+        if let Some(horizontal_index) = test {
+            println!("{}, {}", horizontal_index, row_index);
+            println!("Result: {}", horizontal_index * 4000000 + row_index);
+            break;
         }
-        else {
-            None
-        }
-    }).unique().count();
+    }
 
-    println!("Beacons on row: {}", beacons_on_row);
+    // println!("Result: {:?}", result);
 
-    println!("Range: {}", range - beacons_on_row);
+    // PART 1
+    // let range = sensors
+    //     .iter()
+    //     .fold(HashSet::new(), |mut final_range, sensor| {
+    //         if let Some(coverage_at_row) = sensor.coverage.get(&interested_row) {
+    //             let range = coverage_at_row.0..coverage_at_row.1 + 1;
+    //             final_range.extend(range);
+    //         }
+    //         final_range
+    //     })
+    //     .len();
+    // let beacons_on_row = sensors.iter().filter_map(|s| {
+    //     if s.closest_beacon.1 == interested_row {
+    //         Some(&s.closest_beacon)
+    //     }
+    //     else {
+    //         None
+    //     }
+    // }).unique().count();
+    // println!("Beacons on row: {}", beacons_on_row);
+    //
+    // println!("Range: {}", range - beacons_on_row);
 }
