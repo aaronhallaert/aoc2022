@@ -18,7 +18,7 @@ struct TunnelSystem {
 #[derive(Hash, Debug, Eq, PartialEq)]
 struct CacheEntry {
     time: isize,
-    valve: usize,
+    valve: String,
     opened_valves: usize,
 }
 
@@ -46,9 +46,13 @@ impl TunnelSystem {
             tunnels.insert(valve_name.to_owned(), tunnels_for_valve);
         });
 
-        valves.iter().enumerate().for_each(|(i, valve)| {
-            indices.insert(valve.0.to_string(), i);
-        });
+        valves
+            .iter()
+            .filter(|v| v.1 != &0)
+            .enumerate()
+            .for_each(|(i, valve)| {
+                indices.insert(valve.0.to_string(), i);
+            });
 
         TunnelSystem {
             tunnels,
@@ -114,7 +118,7 @@ impl TunnelSystem {
 
         let cache_key = CacheEntry {
             time,
-            valve: *self.indices.get(current_valve).unwrap(),
+            valve: current_valve.to_owned(),
             opened_valves,
         };
 
@@ -136,7 +140,7 @@ impl TunnelSystem {
                 continue;
             };
 
-            opened_valves |= 1 << self.indices.get(s).unwrap();
+            opened_valves |= 1 << self.indices.get(s).unwrap_or(&self.indices.len());
 
             let additional_pressure = rem_time as usize * self.valves.get(neighbour).unwrap();
 
@@ -149,7 +153,7 @@ impl TunnelSystem {
 
         let new_cache_key = CacheEntry {
             time,
-            valve: *self.indices.get(current_valve).unwrap(),
+            valve: current_valve.to_owned(),
             opened_valves,
         };
 
@@ -175,16 +179,19 @@ fn main() {
     //     tunnel_system.depth_first_search(30, "AA", 0, &mut HashMap::new())
     // )
 
-    let b: usize = (1 << tunnel_system.valves.len()) - 1;
+    let b: usize = (1 << tunnel_system.indices.len()) - 1;
 
     let mut m = 0;
 
     let mut cache = HashMap::new();
 
-    println!("{}",b);
-    for i in 0..b + 1 {
-        m = cmp::max(m, tunnel_system.depth_first_search(26, "AA", i, &mut cache)
-            + tunnel_system.depth_first_search(26, "AA", b ^ i, &mut cache));
+    println!("{}", b);
+    for i in 0..(b + 1) / 2 {
+        m = cmp::max(
+            m,
+            tunnel_system.depth_first_search(26, "AA", i, &mut cache)
+                + tunnel_system.depth_first_search(26, "AA", b ^ i, &mut cache),
+        );
     }
 
     println!("Result: {}", m);
